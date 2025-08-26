@@ -63,7 +63,7 @@ EOF
 profile() {
 	cat <<EOF
 # spellbook temporary params
-export PATH="${SPELLS_DIR}/uv:$PATH"
+export PATH="${SPELLS_DIR}/bin/uv:$PATH"
 export PRE_COMMIT_HOME="$(pwd)/.pre-commit"
 
 . $(pwd)/.venv/bin/activate
