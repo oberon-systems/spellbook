@@ -1,0 +1,12 @@
+{
+  "files": [
+    ".flake8",
+    ".mdlrc",
+    ".pylintrc",
+    ".cz.yaml",
+    ".pre-commit-config.yaml"
+  ],
+  "spells": {
+    "obsidian": ""
+  }
+}
