@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+NAME="$(basename $0)"
+ARCH="$(uname -m)"
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+URL="https://github.com/astral-sh/uv/releases/latest/download/uv-${ARCH}-unknown-${OS}-gnu.tar.gz"
+
+_info() {
+	cat <<EOF
+
+=== UV Spell ===
+  Install and add to environment console UV
+  software (https://docs.astral.sh/uv/).
+
+  It could be used for manage python, python's envs and so.
+=====================
+
+EOF
+}
+
+_install() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${1:?}"
+	_path="$_dir/bin/$NAME"
+	_bin="$_path/$NAME"
+
+	[ -f "$_bin" ] && {
+		echo "$NAME: already installed"
+		exit 0
+	}
+
+	mkdir -p "$_path"
+	curl -LsSf "$URL" | tar -xz -C "$_dir" --strip-components=1
+	chmod +x "$_bin"
+
+	echo "$NAME: installed"
+}
+
+_enable() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${1:?}"
+	_path="$_dir/bin/$NAME"
+	_bin="$_path/$NAME"
+
+	cat <<EOF
+#####  UV Spell  #####
+export PATH="$_path:\$PATH"
+############################
+EOF
+}
+
+if [ -n "$1" ] && declare -f "$1" >/dev/null; then
+	"$1" "${2:-}"
+fi
