@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#
+# Show message of the day on development console start
+#
+cat <<EOF
+#######################################
+####  Spellbook by Oberon systems   ###
+####      Development Console       ###
+#######################################
+# Now you are located into virtual environment
+# where you can find different tools like 'cz'
+# or 'pre-commit'.
+#
+# When you will finish please type 'exit' or
+# press Ctrl^d for end this virtual environment.
+#
+
+EOF
