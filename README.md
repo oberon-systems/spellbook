@@ -6,6 +6,7 @@ A repository template for build comfort dev environments.
 
 <!-- toc -->
 
+- [Spells](#spells)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Gitignore](#gitignore)
@@ -14,6 +15,12 @@ A repository template for build comfort dev environments.
 <!-- tocstop -->
 
 ---
+
+## Spells
+
+- Obsidian: https://obsidian.md/
+
+- uv: https://docs.astral.sh/uv/
 
 ## Installation
 
@@ -79,6 +86,7 @@ I stringly recommend to add next excludes to `.gitignore`
 - gem
 - bash
 - curl
+- python3
 - ruby
 - ruby-devel
 - make
