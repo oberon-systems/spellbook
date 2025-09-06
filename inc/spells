@@ -35,25 +35,25 @@ _spells=($_spells)
 
 # shellcheck disable=SC2005
 for _spell in "${_spells[@]}"; do
+  _param=""
   "$SCRIPT_DIR/spells/$_spell" "_info"
   echo "Spell $_spell not installed, would you like to install it? [Y/n]: "
   yorn "Y" && {
     echo "Installing spell: $_spell"
     "$SCRIPT_DIR/spells/$_spell" "_install" "$SPELLS_DIR"
     _installed+=("$_spell")
-    _param=""
     echo "Would tou like to enable spell: $_spell? [Y/n]: "
     yorn "Y" && {
       echo "Enable spell: $_spell"
       _param="$($SCRIPT_DIR/spells/$_spell _enable $SPELLS_DIR)"
     }
-    _tmp=$(
-      jq -cn --arg spell "$_spell" \
-        --arg param "$_param" \
-        '{$spell: $param}'
-    )
-    _enabled+=("$_tmp")
   }
+  _tmp=$(
+    jq -cn --arg spell "$_spell" \
+      --arg param "$_param" \
+      '{$spell: $param}'
+  )
+  _enabled+=("$_tmp")
 done
 
 echo "Installed ${#_installed[@]}/${#_spells[@]} spells"
