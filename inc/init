@@ -24,7 +24,7 @@ if ! grep -q '.venv' '.gitignore' > /dev/null; then
   echo '.venv' >> '.gitignore'
 fi
 
-if ! grep -q '.pre-commit' '.gitignore' > /dev/null; then
+if ! grep -q '.spellbook.json' '.gitignore' > /dev/null; then
   echo '.spellbook.json' >> '.gitignore'
 fi
 
