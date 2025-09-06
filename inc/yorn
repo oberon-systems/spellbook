@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#
+# Implements Yes-or-No question processing.
+#
+read -r _answer
+[ -z "$_answer" ] && _answer="$1"
+case "$_answer" in
+[Yy]*) return 0 ;;
+[Nn]*) return 1 ;;
+*)
+	echo "Please answer y or n."
+	yorn
+	;;
+esac
+unset _answer

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Install configured files
+#
+SPELL_CONFIG="${SPELL_CONFIG:?}"
+CONFIG="${CONFIG:?}"
+
+_tmp=$(mktemp)
+_copied=()
+_files=$(
+  jq -r --slurpfile local "$SPELL_CONFIG" \
+    '.files - $local[].files | .[]' \
+    "$CONFIG"
+)
+
+# shellcheck disable=SC2206
+_files=($_files)
+[ "${#_files[@]}" -eq 0 ] && {
+  # files synced, skipped
+  return
+}
+
+for _file in "${_files[@]}"; do
+  cp -vi "${SCRIPT_DIR}/${_file}" ./ || {
+    echo "WARNING: Unable to copy $_file"
+  }
+  [ -f "$_file" ] && _copied+=("$_file")
+done
+
+echo "Copied ${#_copied[@]}/${#_files[@]} files"
+(
+  jq -re --arg files "${_copied[*]}" \
+    '.files = (($files | split(" ")) + .files // [] | unique)' \
+    "$SPELL_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELL_CONFIG"
+) || {
+  echo "ERROR: Unable to update local config's files list!"
+  rm -f "$_tmp"
+  exit 255
+}
+
+rm -f "$_tmp"
+unset _tmp _copied _files _file

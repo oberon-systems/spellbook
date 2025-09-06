@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# Install supported spells
+#
+
+if ! declare -f "yorn" > /dev/null; then
+    echo "ERROR: spells: required function 'yorn' not found!"
+    echo "ERROR: spells: please include int first!"
+    exit 255
+fi
+
+SPELL_CONFIG="${SPELL_CONFIG:?}"
+CONFIG="${CONFIG:?}"
+SCRIPT_DIR="${SCRIPT_DIR:?}"
+SPELLS_DIR="${SPELLS_DIR:?}"
+
+_tmp=""
+_param=""
+
+_installed=()
+_enabled=()
+
+_spells=$(
+  jq -r --slurpfile local "$SPELL_CONFIG" \
+    '(.spells | keys) - ($local[].spells | keys ) | .[]' \
+    "$CONFIG"
+)
+
+# shellcheck disable=SC2206
+_spells=($_spells)
+[ "${#_spells[@]}" -eq 0 ] && {
+  # all spells installed
+  return
+}
+
+# shellcheck disable=SC2005
+for _spell in "${_spells[@]}"; do
+  "$SCRIPT_DIR/spells/$_spell" "_info"
+  echo "Spell $_spell not installed, would you like to install it? [Y/n]: "
+  yorn "Y" && {
+    echo "Installing spell: $_spell"
+    "$SCRIPT_DIR/spells/$_spell" "_install" "$SPELLS_DIR"
+    _installed+=("$_spell")
+    continue
+  }
+done
+
+# we shall move enable to install
+for _spell in "${_installed[@]}"; do
+  _param=""
+  echo "Would tou like to enable spell: $_spell? [Y/n]: "
+  yorn "Y" && {
+    echo "Enable spell: $_spell"
+    _param="$($SCRIPT_DIR/spells/$_spell _enable $SPELLS_DIR)"
+  }
+  _tmp=$(
+    jq -cn --arg spell "$_spell" \
+      --arg param "$_param" \
+      '{$spell: $param}'
+  )
+  _enabled+=("$_tmp")
+done
+
+echo "Installed ${#_installed[@]}/${#_spells[@]} spells"
+echo "Enabled ${#_enabled[@]} spells"
+
+_tmp=$(mktemp)
+
+(
+  jq -re --argjson spells "${_enabled[*]}" \
+    '.spells = ($spells + .spells // {})' \
+    "$SPELL_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELL_CONFIG"
+) || {
+  echo "ERROR: Unable to update local config's files list!"
+  rm -f "$_tmp"
+  exit 255
+}
+
+rm -f "$_tmp"
+unset _tmp _param _installed _enabled _spells _spell

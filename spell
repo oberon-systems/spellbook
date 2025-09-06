@@ -13,6 +13,7 @@ RUN="${1:-enable}"
 SPELLS_DIR="${HOME}/.local/spellbook"
 SCRIPT_BIN="$(readlink -f $0)"
 SCRIPT_DIR=$(dirname "$SCRIPT_BIN")
+SCRIPT_INC="$SCRIPT_DIR/inc"
 
 CONFIG="${SCRIPT_DIR}/config.json"
 SPELL_CONFIG=".spellbook.json"
@@ -49,65 +50,43 @@ for _req in "${REQUIREMENTS[@]}"; do
 	}
 done
 
-# motd template
-_motd() {
-	cat <<EOF
-#######################################
-####  Spellbook by Oberon systems   ###
-####      Development Console       ###
-#######################################
-# Now you are located into virtual environment
-# where you can find different tools like 'cz'
-# or 'pre-commit'.
-#
-# When you will finish please type 'exit' or
-# press Ctrl^d for end this virtual environment.
-#
+_include() {
+	local _path
+	local _func
+	local _content
 
-EOF
+	_path="${1:?}" || {
+		echo "ERROR: include: path param is missed, but required!"
+		exit 255
+	}
+
+	[ -f "$_path" ] || {
+		echo "ERROR: include: $_path not found!"
+		exit 255
+	}
+
+	_func=$(basename "$_path")
+	_content=$(sed -e '1{/^#!/d;}' -e '/^[[:space:]]*$/d' "$_path")
+
+	eval "$_func() {
+    $_content
+  }"
 }
 
-# temporary profile template
-_profile() {
-	cat <<EOF
-# spellbook temporary params
-export PATH="${SPELLS_DIR}/bin/uv:$PATH"
-export PRE_COMMIT_HOME="$(pwd)/.pre-commit"
+_include "$SCRIPT_INC/motd"
+_include "$SCRIPT_INC/profile"
+_include "$SCRIPT_INC/yorn"
+_include "$SCRIPT_INC/files"
+_include "$SCRIPT_INC/spells"
 
-. $(pwd)/.venv/bin/activate
-
-$(jq -r '.spells[]' $SPELL_CONFIG)
-
-# Auto-install pre-commit hooks
-if [ ! -d .pre-commit ]; then
-  echo "Pre-commit not found, installing..."
-  pre-commit install-hooks
-fi
-pre-commit install > /dev/null
-EOF
-}
-
-# Yes-or-No Questions
-yorn() {
-	default="$1"
-	read -r answer
-	[ -z "$answer" ] && answer="$default"
-	case "$answer" in
-	[Yy]*) return 0 ;;
-	[Nn]*) return 1 ;;
-	*)
-		echo "Please answer y or n."
-		yorn
-		;;
-	esac
-}
-
+# fix: should be a spell
 # install uv
 _uv() {
 	mkdir -p "${SPELLS_DIR}/bin/uv"
 	curl -LsSf "$UV_URL" | tar -xz -C "${SPELLS_DIR}/bin/uv" --strip-components=1
 }
 
+# fix: should be a spell
 # install virtual environment
 _venv() {
 	if [ ! -f "$UV" ]; then
@@ -117,109 +96,6 @@ _venv() {
 	$UV venv --relocatable --python "$PYTHON"
 	$UV pip install --upgrade pip
 	$UV pip install -r "${SCRIPT_DIR}/requirements.txt"
-}
-
-# install files
-_files() {
-	# use jq end read from configs
-	local tmp
-	local files
-	local copied
-
-	tmp=$(mktemp)
-	copied=()
-	files=$(
-		jq -r --slurpfile local "$SPELL_CONFIG" \
-			'.files - $local[].files | .[]' \
-			"$CONFIG"
-	)
-	# shellcheck disable=SC2206
-	files=($files)
-	[ "${#files[@]}" -eq 0 ] && {
-		# files synced, skipped
-		return
-	}
-	for file in "${files[@]}"; do
-		cp -vi "${SCRIPT_DIR}/${file}" ./ || {
-			echo "WARNING: Unable to copy $file"
-		}
-		[ -f "$file" ] && copied+=("$file")
-	done
-	echo "Copied ${#copied[@]}/${#files[@]} files"
-	(
-		jq -re --arg files "${copied[*]}" \
-			'.files = (($files | split(" ")) + .files // [] | unique)' \
-			"$SPELL_CONFIG" >"$tmp" && mv "$tmp" "$SPELL_CONFIG"
-	) || {
-		echo "ERROR: Unable to update local config's files list!"
-		rm -f "$tmp"
-		exit 255
-	}
-	rm -f "$tmp"
-}
-
-_spells() {
-	local tmp
-	local param
-	local spells
-	local installed
-	local enabled
-
-	installed=()
-	enabled=()
-
-	spells=$(
-		jq -r --slurpfile local "$SPELL_CONFIG" \
-			'(.spells | keys) - ($local[].spells | keys ) | .[]' \
-			"$CONFIG"
-	)
-	# shellcheck disable=SC2206
-	spells=($spells)
-	[ "${#spells[@]}" -eq 0 ] && {
-		# all spells installed
-		return
-	}
-	# shellcheck disable=SC2005
-	for spell in "${spells[@]}"; do
-		echo
-		echo "$($SCRIPT_DIR/spells/$spell _info)"
-		echo
-		echo "Spell $spell not installed, would you like to install it? [Y/n]: "
-		yorn "Y" && {
-			echo "Installing spell: $spell"
-			"$SCRIPT_DIR/spells/$spell" "_install" "$SPELLS_DIR"
-			installed+=("$spell")
-			continue
-		}
-	done
-	# we shall move enable to install
-	for spell in "${installed[@]}"; do
-		param=""
-		echo "Would tou like to enable spell: $spell? [Y/n]: "
-		yorn "Y" && {
-			echo "Enable spell: $spell"
-			param="$($SCRIPT_DIR/spells/$spell _enable $SPELLS_DIR)"
-		}
-		tmp=$(
-			jq -cn --arg spell "$spell" \
-				--arg param "$param" \
-				'{$spell: $param}'
-		)
-		enabled+=("$tmp")
-	done
-	echo "Installed ${#installed[@]}/${#spells[@]} spells"
-	echo "Enabled ${#enabled[@]} spells"
-	tmp=$(mktemp)
-	(
-		jq -re --argjson spells "${enabled[*]}" \
-			'.spells = ($spells + .spells // {})' \
-			"$SPELL_CONFIG" >"$tmp" && mv "$tmp" "$SPELL_CONFIG"
-	) || {
-		echo "ERROR: Unable to update local config's files list!"
-		rm -f "$tmp"
-		exit 255
-	}
-	rm -f "$tmp"
 }
 
 install() {
@@ -243,24 +119,24 @@ enable() {
 		cp "${SCRIPT_DIR}/dummy.json" "$SPELL_CONFIG"
 	fi
 
-	_files
+	files
 
 	if [ ! -f ".venv/bin/python" ]; then
 		echo "WARNING: virtual env not found, installing..."
 		$SCRIPT_BIN "_venv"
 	fi
 
-	_spells
+	spells
 
 	echo "Starting Oberon Systems Developing Environment..."
 
 	# build environment
 	{
 		cat "${HOME}/.bashrc"
-		_profile
+		profile
 	} >"$TEMP_PROFILE"
 	# print motd
-	_motd
+	motd
 	# run env
 	/usr/bin/env bash --init-file "$TEMP_PROFILE"
 	.venv/bin/pre-commit uninstall >/dev/null

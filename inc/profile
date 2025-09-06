@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# Create a temporary profile template for future
+# developer console session.
+#
+SPELL_CONFIG="${SPELL_CONFIG:?}"
+SPELLS_DIR="${SPELLS_DIR:?}"
+cat <<EOF
+# spellbook temporary params
+export PATH="${SPELLS_DIR}/bin/uv:$PATH"
+export PRE_COMMIT_HOME="$(pwd)/.pre-commit"
+
+. $(pwd)/.venv/bin/activate
+
+$(jq -r '.spells[]' $SPELL_CONFIG)
+
+# Auto-install pre-commit hooks
+if [ ! -d .pre-commit ]; then
+  echo "Pre-commit not found, installing..."
+  pre-commit install-hooks
+fi
+pre-commit install > /dev/null
+EOF
