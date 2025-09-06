@@ -41,34 +41,34 @@ for _spell in "${_spells[@]}"; do
     echo "Installing spell: $_spell"
     "$SCRIPT_DIR/spells/$_spell" "_install" "$SPELLS_DIR"
     _installed+=("$_spell")
-    continue
+    _param=""
+    echo "Would tou like to enable spell: $_spell? [Y/n]: "
+    yorn "Y" && {
+      echo "Enable spell: $_spell"
+      _param="$($SCRIPT_DIR/spells/$_spell _enable $SPELLS_DIR)"
+    }
+    _tmp=$(
+      jq -cn --arg spell "$_spell" \
+        --arg param "$_param" \
+        '{$spell: $param}'
+    )
+    _enabled+=("$_tmp")
   }
-done
-
-# we shall move enable to install
-for _spell in "${_installed[@]}"; do
-  _param=""
-  echo "Would tou like to enable spell: $_spell? [Y/n]: "
-  yorn "Y" && {
-    echo "Enable spell: $_spell"
-    _param="$($SCRIPT_DIR/spells/$_spell _enable $SPELLS_DIR)"
-  }
-  _tmp=$(
-    jq -cn --arg spell "$_spell" \
-      --arg param "$_param" \
-      '{$spell: $param}'
-  )
-  _enabled+=("$_tmp")
 done
 
 echo "Installed ${#_installed[@]}/${#_spells[@]} spells"
 echo "Enabled ${#_enabled[@]} spells"
 
-_tmp=$(mktemp)
+[ "${#_enabled[@]}" -eq 0 ] && {
+  # no spells enabled
+  return
+}
 
+_tmp=$(mktemp)
+_json=$(echo "${_enabled[*]}" | jq -s '.')
 (
-  jq -re --argjson spells "${_enabled[*]}" \
-    '.spells = ($spells + .spells // {})' \
+  jq -re --argjson spells "$_json" \
+    '.spells = (($spells | add) + .spells // {})' \
     "$SPELL_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELL_CONFIG"
 ) || {
   echo "ERROR: Unable to update local config's files list!"
@@ -77,4 +77,4 @@ _tmp=$(mktemp)
 }
 
 rm -f "$_tmp"
-unset _tmp _param _installed _enabled _spells _spell
+unset _tmp _param _installed _enabled _spells _spell _json
