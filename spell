@@ -21,17 +21,7 @@ SPELL_CONFIG=".spellbook.json"
 # Temporary data configs
 TEMP_PROFILE=$(mktemp /tmp/spellbook-profile.XXXXXX)
 
-# System params
-ARCH="$(uname -m)"
-OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-
-# UV Params
-UV="${SPELLS_DIR}/bin/uv/uv"
-UV_URL="https://github.com/astral-sh/uv/releases/latest/download/uv-${ARCH}-unknown-${OS}-gnu.tar.gz"
-
 # Python and modules params
-PYTHON="python3.12"
-VIRTUAL_ENV="venv"
 PRE_COMMIT_HOME=".pre-commit"
 
 REQUIREMENTS=(
@@ -39,6 +29,7 @@ REQUIREMENTS=(
 	"tar"
 	"git"
 	"curl"
+	"python3"
 )
 
 # validate binaries
@@ -78,25 +69,7 @@ _include "$SCRIPT_INC/profile"
 _include "$SCRIPT_INC/yorn"
 _include "$SCRIPT_INC/files"
 _include "$SCRIPT_INC/spells"
-
-# fix: should be a spell
-# install uv
-_uv() {
-	mkdir -p "${SPELLS_DIR}/bin/uv"
-	curl -LsSf "$UV_URL" | tar -xz -C "${SPELLS_DIR}/bin/uv" --strip-components=1
-}
-
-# fix: should be a spell
-# install virtual environment
-_venv() {
-	if [ ! -f "$UV" ]; then
-		echo "WARNING: uv binary nit found, installing..."
-		$SCRIPT_BIN "uv"
-	fi
-	$UV venv --relocatable --python "$PYTHON"
-	$UV pip install --upgrade pip
-	$UV pip install -r "${SCRIPT_DIR}/requirements.txt"
-}
+_include "$SCRIPT_INC/virtualenv"
 
 install() {
 	if ! grep -q "alias spell=" "${HOME}/.bashrc"; then
@@ -120,13 +93,8 @@ enable() {
 	fi
 
 	files
-
-	if [ ! -f ".venv/bin/python" ]; then
-		echo "WARNING: virtual env not found, installing..."
-		$SCRIPT_BIN "_venv"
-	fi
-
 	spells
+	virtualenv
 
 	echo "Starting Oberon Systems Developing Environment..."
 
