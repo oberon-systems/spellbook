@@ -1,0 +1,167 @@
+#!/usr/bin/env sh
+# shellcheck disable=SC2013
+# shellcheck disable=SC2034
+set -e
+
+RUN="${1:-enable}"
+
+# Built-in vars
+[ -z "$USER" ] && USER="$(id -un)"
+[ -z "$HOME" ] && HOME="$(getent passwd $USER | cut -d':' -f6)"
+
+# Directories configs
+SPELLS_DIR="${HOME}/.local/spellbook"
+SCRIPT_BIN="$(readlink -f $0)"
+SCRIPT_DIR=$(dirname "$SCRIPT_BIN")
+
+# Temporary data configs
+TEMP_PROFILE=$(mktemp /tmp/spellbook-profile.XXXXXX)
+
+# System params
+ARCH="$(uname -m)"
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+
+# UV Params
+UV="${SPELLS_DIR}/bin/uv/uv"
+UV_URL="https://github.com/astral-sh/uv/releases/latest/download/uv-${ARCH}-unknown-${OS}-gnu.tar.gz"
+
+# Python and modules params
+PYTHON="python3.12"
+VIRTUAL_ENV="venv"
+PRE_COMMIT_HOME=".pre-commit"
+
+# Binaries
+CURL="$(command -v curl)" || {
+	echo "ERROR: curl binary not found, please install it!"
+	exit 255
+}
+
+TAR="$(command -v tar)" || {
+	echo "ERROR: tar binary not found, please install it!"
+	exit 255
+}
+
+# motd template
+motd() {
+	cat <<EOF
+#######################################
+####  Spellbook by Oberon systems   ###
+####      Development Console       ###
+#######################################
+# Now you are located into virtual environment
+# where you can find different tools like 'cz'
+# or 'pre-commit'.
+#
+# When you will finish please type 'exit' or
+# press Ctrl^d for end this virtual environment.
+#
+
+EOF
+}
+
+# temporary profile template
+profile() {
+	cat <<EOF
+# spellbook temporary params
+export PATH="${SPELLS_DIR}/uv:$PATH"
+export PRE_COMMIT_HOME="$(pwd)/.pre-commit"
+
+. $(pwd)/.venv/bin/activate
+
+# Auto-install pre-commit hooks
+if [ ! -d .pre-commit ]; then
+  echo "Pre-commit not found, installing..."
+  pre-commit install-hooks
+  pre-commit install
+fi
+EOF
+}
+
+# Yes-or-No Questions
+yorn() {
+	default="$1"
+	read -r answer
+	[ -z "$answer" ] && answer="$default"
+	case "$answer" in
+	[Yy]*) return 0 ;;
+	[Nn]*) return 1 ;;
+	*)
+		echo "Please answer y or n."
+		yorn
+		;;
+	esac
+}
+
+# install uv
+uv() {
+	mkdir -p "${SPELLS_DIR}/bin/uv"
+	$CURL -LsSf "$UV_URL" | $TAR -xz -C "${SPELLS_DIR}/bin/uv" --strip-components=1
+}
+
+# install virtual environment
+venv() {
+	if [ ! -f "$UV" ]; then
+		echo "WARNING: uv binary nit found, installing..."
+		$SCRIPT_BIN "uv"
+	fi
+	$UV venv --relocatable --python "$PYTHON"
+	$UV pip install --upgrade pip
+	$UV pip install -r "${SCRIPT_DIR}/requirements.txt"
+}
+
+# install files
+files() {
+	files=""
+	for file in $(cat "${SCRIPT_DIR}/files"); do
+		[ -f "$file" ] && {
+			echo "File $file found, would you override it? [y/N]: "
+			yorn "N" || {
+				file=""
+			}
+		}
+		files="$files $file"
+	done
+	for file in $files; do
+		cp -v "${SCRIPT_DIR}/${file}" ./
+	done
+}
+
+install() {
+	if ! grep -q "alias spell=" "${HOME}/.bashrc"; then
+		echo "Installing alias"
+		echo "alias spell=${SCRIPT_BIN}" >>"${HOME}/.bashrc"
+	fi
+}
+
+# Enable virtual console
+enable() {
+	if [ ! -d ".git" ]; then
+		echo "ERROR: not git directory, env start skipped..."
+		exit 1
+	fi
+
+	if [ ! -f ".venv/bin/python" ]; then
+		echo "WARNING: virtual env not found, installing..."
+		$SCRIPT_BIN "venv"
+	fi
+	echo "Starting Oberon Systems Developing Environment..."
+
+	[ -f .spellbook ] || {
+		echo "Files meta not found, first run?"
+		files
+		touch .spellbook
+	}
+
+	# build environment
+	{
+		cat "${HOME}/.bashrc"
+		profile
+	} >"$TEMP_PROFILE"
+	# print motd
+	motd
+	# run env
+	/usr/bin/env bash --init-file "$TEMP_PROFILE"
+	rm -f "$TEMP_PROFILE"
+}
+
+$RUN
