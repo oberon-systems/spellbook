@@ -3,6 +3,12 @@
 # New installation initialization
 #
 
+if ! declare -f "yorn" > /dev/null; then
+    echo "ERROR: spells: required function 'yorn' not found!"
+    echo "ERROR: spells: please include int first!"
+    exit 255
+fi
+
 SCRIPT_DIR="${SCRIPT_DIR:?}"
 SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 
@@ -24,4 +30,31 @@ fi
 
 if ! [ -f "$SPELLS_CONFIG" ]; then
   cp "${SCRIPT_DIR}/dummy.json" "$SPELLS_CONFIG"
+  _user=$(
+    git config --local user.name ||
+    git config --global user.name
+  )
+  _email=$(
+    git config --local user.email ||
+    git config --global user.email
+  )
+cat <<EOF
+
+A new Spellbook installation found, empty local config has
+been created.
+
+Current commiter info:
+  User:   $_user
+  Email:  $_email
+
+Would tou like to update local git commiter infi? [y/N]
+EOF
+yorn "N" && {
+  read -rp "Enter name: " _user
+  read -rp "Enter email: " _email
+  git config --local user.name "$_user"
+  git config --local user.email "$_email"
+}
 fi
+
+unset _user _email
