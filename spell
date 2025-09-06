@@ -4,7 +4,7 @@
 set -e
 
 TARGETS=("install" "enable")
-RUN="${1:-enable}"
+TARGET="${1:-enable}"
 
 # Built-in vars
 [ -z "$USER" ] && USER="$(id -un)"
@@ -109,4 +109,8 @@ enable() {
 	rm -f "$TEMP_PROFILE"
 }
 
-$RUN
+# shellcheck disable=SC2015
+[[ "${TARGETS[*]}" =~ $TARGET ]] && $TARGET || {
+	echo "ERROR: please select one of next run options: ${TARGETS[*]}"
+	exit 1
+}
