@@ -4,7 +4,8 @@
     ".mdlrc",
     ".pylintrc",
     ".cz.yaml",
-    ".pre-commit-config.yaml"
+    ".pre-commit-config.yaml",
+    "md_style.rb"
   ],
   "spells": {
     "obsidian": "",
