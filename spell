@@ -3,6 +3,7 @@
 # shellcheck disable=SC2034
 set -e
 
+TARGETS=("install" "enable")
 RUN="${1:-enable}"
 
 # Built-in vars
@@ -10,13 +11,14 @@ RUN="${1:-enable}"
 [ -z "$HOME" ] && HOME="$(getent passwd $USER | cut -d':' -f6)"
 
 # Directories configs
-SPELLS_DIR="${HOME}/.local/spellbook"
 SCRIPT_BIN="$(readlink -f $0)"
 SCRIPT_DIR=$(dirname "$SCRIPT_BIN")
 SCRIPT_INC="$SCRIPT_DIR/inc"
 
 CONFIG="${SCRIPT_DIR}/config.json"
-SPELL_CONFIG=".spellbook.json"
+
+SPELLS_DIR="${HOME}/.local/spellbook"
+SPELLS_CONFIG=".spellbook.json"
 
 # Temporary data configs
 TEMP_PROFILE=$(mktemp /tmp/spellbook-profile.XXXXXX)
@@ -64,6 +66,7 @@ _include() {
   }"
 }
 
+_include "$SCRIPT_INC/init"
 _include "$SCRIPT_INC/motd"
 _include "$SCRIPT_INC/profile"
 _include "$SCRIPT_INC/yorn"
@@ -82,18 +85,13 @@ install() {
 
 # Enable virtual console
 enable() {
-	if [ ! -d ".git" ]; then
-		echo "ERROR: not git directory, env start skipped..."
-		exit 1
-	fi
-
-	if ! [ -f "$SPELL_CONFIG" ]; then
-		echo "Spell config missed, creating dummy config..."
-		cp "${SCRIPT_DIR}/dummy.json" "$SPELL_CONFIG"
-	fi
-
+	# initialize defaults if required
+	init
+	# copying pre-commit checks configs
 	files
+	# installing spells
 	spells
+	# create virtual env
 	virtualenv
 
 	echo "Starting Oberon Systems Developing Environment..."

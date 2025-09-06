@@ -2,13 +2,14 @@
 #
 # Install configured files
 #
-SPELL_CONFIG="${SPELL_CONFIG:?}"
+
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 CONFIG="${CONFIG:?}"
 
 _tmp=$(mktemp)
 _copied=()
 _files=$(
-  jq -r --slurpfile local "$SPELL_CONFIG" \
+  jq -r --slurpfile local "$SPELLS_CONFIG" \
     '.files - $local[].files | .[]' \
     "$CONFIG"
 )
@@ -31,7 +32,7 @@ echo "Copied ${#_copied[@]}/${#_files[@]} files"
 (
   jq -re --arg files "${_copied[*]}" \
     '.files = (($files | split(" ")) + .files // [] | unique)' \
-    "$SPELL_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELL_CONFIG"
+    "$SPELLS_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELLS_CONFIG"
 ) || {
   echo "ERROR: Unable to update local config's files list!"
   rm -f "$_tmp"

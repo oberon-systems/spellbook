@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="${SCRIPT_DIR:?}"
-SPELL_CONFIG="${SPELL_CONFIG:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 SPELLS_DIR="${SPELLS_DIR:?}"
 
 [ -d ".venv" ] && {
@@ -9,7 +9,7 @@ SPELLS_DIR="${SPELLS_DIR:?}"
   return
 }
 
-if jq -re '.spells.uv' "$SPELL_CONFIG" > /dev/null; then
+if jq -re '.spells.uv' "$SPELLS_CONFIG" > /dev/null; then
 
   # set path to uv binary
   _uv="${SPELLS_DIR}/bin/uv/uv"
@@ -41,7 +41,7 @@ _tmp=$(mktemp)
 (
   jq -re --arg python "$PYTHON" \
     '.python = $python' \
-    "$SPELL_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELL_CONFIG"
+    "$SPELLS_CONFIG" >"$_tmp" && mv "$_tmp" "$SPELLS_CONFIG"
 ) || {
   echo "ERROR: Unable to update local config's files list!"
   rm -f "$_tmp"

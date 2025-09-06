@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# New installation initialization
+#
+
+SCRIPT_DIR="${SCRIPT_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
+if [ ! -d ".git" ]; then
+  git init
+fi
+
+if ! grep -q '.pre-commit' '.gitignore' > /dev/null; then
+  echo '.pre-commit' >> '.gitignore'
+fi
+
+if ! grep -q '.venv' '.gitignore' > /dev/null; then
+  echo '.venv' >> '.gitignore'
+fi
+
+if ! grep -q '.pre-commit' '.gitignore' > /dev/null; then
+  echo '.spellbook.json' >> '.gitignore'
+fi
+
+if ! [ -f "$SPELLS_CONFIG" ]; then
+  cp "${SCRIPT_DIR}/dummy.json" "$SPELLS_CONFIG"
+fi

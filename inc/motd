@@ -2,6 +2,7 @@
 #
 # Show message of the day on development console start
 #
+
 cat <<EOF
 #######################################
 ####  Spellbook by Oberon systems   ###
