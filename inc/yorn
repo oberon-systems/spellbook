@@ -2,6 +2,7 @@
 #
 # Implements Yes-or-No question processing.
 #
+
 read -r _answer
 [ -z "$_answer" ] && _answer="$1"
 case "$_answer" in
