@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+NAME="$(basename $0)"
+URL="https://github.com/obsidianmd/obsidian-releases/releases/download/v1.9.10/Obsidian-1.9.10.AppImage"
+
+_info() {
+	cat <<EOF
+
+=== Obsidian Spell ===
+  Install and add to environment console Obsidian
+  software (https://obsidian.md/).
+
+  It will be start automatically on environment console launch.
+  could be useful for documents repositories.
+=====================
+
+EOF
+}
+
+_install() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${1:?}"
+	_path="$_dir/bin/$NAME"
+	_bin="$_path/$NAME"
+
+	[ -f "$_bin" ] && {
+		echo "$NAME: already installed"
+		exit 0
+	}
+
+	mkdir -p "$_path"
+	curl -LsSf "$URL" -o "$_bin"
+	chmod +x "$_bin"
+
+	echo "$NAME: installed"
+}
+
+_enable() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${1:?}"
+	_path="$_dir/bin/$NAME"
+	_bin="$_path/$NAME"
+
+	cat <<EOF
+#####  Obsidian Spell  #####
+export PATH="$_path:\$PATH"
+
+obsidian() {
+  $_bin --no-sandbox >/dev/null 2>&1 &
+    local pid=\$!
+    echo \$pid > ~/.obsidian.pid
+    trap "kill \$pid 2>/dev/null; rm -f ~/.obsidian.pid" EXIT
+}
+obsidian
+############################
+EOF
+}
+
+if [ -n "$1" ] && declare -f "$1" >/dev/null; then
+	"$1" "${2:-}"
+fi

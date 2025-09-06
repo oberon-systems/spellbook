@@ -73,6 +73,7 @@ I stringly recommend to add next excludes to `.gitignore`
 
 ## Dependencies
 
+- jq
 - tar
 - git
 - gem
