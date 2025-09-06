@@ -51,7 +51,7 @@ for _spell in "${_spells[@]}"; do
   _tmp=$(
     jq -cn --arg spell "$_spell" \
       --arg param "$_param" \
-      '{$spell: $param}'
+      '{$spell: ($param | if . == "" then false else . end)}'
   )
   _enabled+=("$_tmp")
 done
