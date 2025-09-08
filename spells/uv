@@ -5,6 +5,12 @@ ARCH="$(uname -m)"
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 URL="https://github.com/astral-sh/uv/releases/latest/download/uv-${ARCH}-unknown-${OS}-gnu.tar.gz"
 
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
 _info() {
 	cat <<EOF
 
@@ -23,8 +29,8 @@ _install() {
 	local _bin
 	local _path
 
-	_dir="${1:?}"
-	_path="$_dir/bin/$NAME"
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
 	_bin="$_path/$NAME"
 
 	[ -f "$_bin" ] && {
@@ -33,7 +39,7 @@ _install() {
 	}
 
 	mkdir -p "$_path"
-	curl -LsSf "$URL" | tar -xz -C "$_dir" --strip-components=1
+	curl -LsSf "$URL" | tar -xz -C "$_path" --strip-components=1
 	chmod +x "$_bin"
 
 	echo "$NAME: installed"
@@ -44,8 +50,8 @@ _enable() {
 	local _bin
 	local _path
 
-	_dir="${1:?}"
-	_path="$_dir/bin/$NAME"
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
 	_bin="$_path/$NAME"
 
 	cat <<EOF
