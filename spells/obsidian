@@ -3,6 +3,12 @@
 NAME="$(basename $0)"
 URL="https://github.com/obsidianmd/obsidian-releases/releases/download/v1.9.10/Obsidian-1.9.10.AppImage"
 
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
 _info() {
 	cat <<EOF
 
@@ -22,8 +28,8 @@ _install() {
 	local _bin
 	local _path
 
-	_dir="${1:?}"
-	_path="$_dir/bin/$NAME"
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
 	_bin="$_path/$NAME"
 
 	[ -f "$_bin" ] && {
@@ -43,9 +49,22 @@ _enable() {
 	local _bin
 	local _path
 
-	_dir="${1:?}"
-	_path="$_dir/bin/$NAME"
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
 	_bin="$_path/$NAME"
+
+	_pid="$(mktemp -u /tmp/spell-obsidian-XXXXXXXXXXXX.pid)"
+
+	if ! [ -f "$SPELLS_CFG_DIR/obsidian/obsidian.json" ]; then
+		mkdir -p "$SPELLS_CFG_DIR/obsidian"
+		# shellcheck disable=SC2002
+		cat <<EOF >"$SPELLS_CFG_DIR/obsidian/obsidian.json"
+{
+  "vaults":{
+    "$(cat /dev/urandom | tr -dc a-z0-9 | head -c16)":{
+      "path":"$(pwd)","ts":$(date +%s%3N),"open":true}}}
+EOF
+	fi
 
 	cat <<EOF
 #####  Obsidian Spell  #####
@@ -54,8 +73,8 @@ export PATH="$_path:\$PATH"
 obsidian() {
   $_bin --no-sandbox >/dev/null 2>&1 &
     local pid=\$!
-    echo \$pid > ~/.obsidian.pid
-    trap "kill \$pid 2>/dev/null; rm -f ~/.obsidian.pid" EXIT
+    echo \$pid > "$_pid"
+    trap "kill \$pid 2>/dev/null; rm -f $_pid" EXIT
 }
 obsidian
 ############################
