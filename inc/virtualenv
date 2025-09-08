@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="${SCRIPT_DIR:?}"
-SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
+# Spells Defaults
 SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 
 [ -d ".venv" ] && {
   # venv exist
@@ -23,18 +27,23 @@ if jq -re '.spells.uv' "$SPELLS_CONFIG" > /dev/null; then
       $_uv venv --python "$_python"
       $_uv pip install --upgrade pip
       $_uv pip install -r "${SCRIPT_DIR}/requirements.txt"
+
       PYTHON="$_python"
+      PIP_BIN="$_uv pip"
+
 			break
 		else
 			echo "Invalid selection. Please try again."
 		fi
 	done
 else
-
   python3  -m venv --prompt="$(basename $(pwd))" ".venv"
   .venv/bin/python3 -m pip install --upgrade pip
   .venv/bin/python3 -m pip install -r "${SCRIPT_DIR}/requirements.txt"
+
   PYTHON="$(python3 --version | cut -d' ' -f2)"
+  PIP_BIN=".venv/bin/python3 -m pip"
+
 fi
 
 _tmp=$(mktemp)
@@ -49,4 +58,9 @@ _tmp=$(mktemp)
 }
 rm -f "$_tmp"
 
-unset _tmp _python _pythons _uv PYTHON VIRTUAL_ENV
+[ -f "$(pwd)/requirements.txt" ] && {
+  echo "Requirements file found in repository, installing..."
+  $PIP_BIN install -r "$(pwd)/requirements.txt"
+}
+
+unset _tmp _python _pythons _uv PYTHON VIRTUAL_ENV PIP_BIN

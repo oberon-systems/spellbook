@@ -9,8 +9,8 @@ if ! declare -f "yorn" > /dev/null; then
     exit 255
 fi
 
+CONFIG="${CONFIG:?}"
 SCRIPT_DIR="${SCRIPT_DIR:?}"
-SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 
 if [ ! -d ".git" ]; then
   git init
@@ -24,9 +24,9 @@ if ! grep -q '.venv' '.gitignore' > /dev/null; then
   echo '.venv' >> '.gitignore'
 fi
 
-if ! grep -q '.spellbook.json' '.gitignore' > /dev/null; then
-  echo '.spellbook.json' >> '.gitignore'
-fi
+[ -d "$SPELLS_CFG_DIR" ] || {
+  mkdir -p "$SPELLS_CFG_DIR"
+}
 
 if ! [ -f "$SPELLS_CONFIG" ]; then
   cp "${SCRIPT_DIR}/dummy.json" "$SPELLS_CONFIG"

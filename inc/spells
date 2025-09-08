@@ -9,10 +9,14 @@ if ! declare -f "yorn" > /dev/null; then
     exit 255
 fi
 
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
 SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
 CONFIG="${CONFIG:?}"
 SCRIPT_DIR="${SCRIPT_DIR:?}"
-SPELLS_DIR="${SPELLS_DIR:?}"
 
 _tmp=""
 _param=""
@@ -40,12 +44,12 @@ for _spell in "${_spells[@]}"; do
   echo "Spell $_spell not installed, would you like to install it? [Y/n]: "
   yorn "Y" && {
     echo "Installing spell: $_spell"
-    "$SCRIPT_DIR/spells/$_spell" "_install" "$SPELLS_DIR"
+    "$SCRIPT_DIR/spells/$_spell" "_install"
     _installed+=("$_spell")
     echo "Would tou like to enable spell: $_spell? [Y/n]: "
     yorn "Y" && {
       echo "Enable spell: $_spell"
-      _param="$($SCRIPT_DIR/spells/$_spell _enable $SPELLS_DIR)"
+      _param="$($SCRIPT_DIR/spells/$_spell _enable)"
     }
   }
   _tmp=$(

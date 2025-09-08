@@ -11,17 +11,13 @@ TARGET="${1:-enable}"
 [ -z "$HOME" ] && HOME="$(getent passwd $USER | cut -d':' -f6)"
 
 # Directories configs
+NAME=$(basename "$(pwd)")
+
 SCRIPT_BIN="$(readlink -f $0)"
 SCRIPT_DIR=$(dirname "$SCRIPT_BIN")
 SCRIPT_INC="$SCRIPT_DIR/inc"
 
 CONFIG="${SCRIPT_DIR}/config.json"
-
-SPELLS_DIR="${HOME}/.local/spellbook"
-SPELLS_CONFIG=".spellbook.json"
-
-# Temporary data configs
-TEMP_PROFILE=$(mktemp /tmp/spellbook-profile.XXXXXX)
 
 # Python and modules params
 PRE_COMMIT_HOME=".pre-commit"
@@ -33,6 +29,14 @@ REQUIREMENTS=(
 	"curl"
 	"python3"
 )
+
+export SPELLS_DIR="${HOME}/.spellbook"
+export SPELLS_CFG_DIR="${SPELLS_DIR}/configs/${NAME}"
+export SPELLS_BIN_DIR="${SPELLS_DIR}/bin"
+export SPELLS_CONFIG="${SPELLS_CFG_DIR}/config.json"
+
+# Profile
+PROFILE="$SPELLS_CFG_DIR/.bashrc"
 
 # validate binaries
 for _req in "${REQUIREMENTS[@]}"; do
@@ -74,6 +78,12 @@ _include "$SCRIPT_INC/files"
 _include "$SCRIPT_INC/spells"
 _include "$SCRIPT_INC/virtualenv"
 
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
 install() {
 	if ! grep -q "alias spell=" "${HOME}/.bashrc"; then
 		echo "Installing alias"
@@ -100,13 +110,13 @@ enable() {
 	{
 		cat "${HOME}/.bashrc"
 		profile
-	} >"$TEMP_PROFILE"
+	} >"$PROFILE"
 	# print motd
 	motd
 	# run env
-	/usr/bin/env bash --init-file "$TEMP_PROFILE"
+	/usr/bin/env bash --init-file "$PROFILE"
 	.venv/bin/pre-commit uninstall >/dev/null
-	rm -f "$TEMP_PROFILE"
+	rm -f "$PROFILE"
 }
 
 # shellcheck disable=SC2015

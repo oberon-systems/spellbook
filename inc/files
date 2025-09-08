@@ -3,8 +3,14 @@
 # Install configured files
 #
 
-SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
 CONFIG="${CONFIG:?}"
+
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 
 _tmp=$(mktemp)
 _copied=()

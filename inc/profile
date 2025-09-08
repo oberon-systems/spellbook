@@ -4,17 +4,22 @@
 # developer console session.
 #
 
-SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+# Spells Defaults
 SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
 
 cat <<EOF
 # spellbook temporary params
-export PATH="${SPELLS_DIR}/bin/uv:$PATH"
+export XDG_CONFIG_HOME="$SPELLS_CFG_DIR"
 export PRE_COMMIT_HOME="$(pwd)/.pre-commit"
 
-. $(pwd)/.venv/bin/activate
+cd $(pwd)
 
-$(jq -r '.spells[]' $SPELLS_CONFIG)
+. .venv/bin/activate
+
+$(jq -r '.spells[] | select(.)' $SPELLS_CONFIG)
 
 # Auto-install pre-commit hooks
 if [ ! -d .pre-commit ]; then
