@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+
+NAME="$(basename $0)"
+URL="https://github.com/oberon-systems/puck-sigil/releases/download/v0.1.0/psigil"
+
+# Spells Defaults
+SPELLS_DIR="${SPELLS_DIR:?}"
+SPELLS_CFG_DIR="${SPELLS_CFG_DIR:?}"
+SPELLS_BIN_DIR="${SPELLS_BIN_DIR:?}"
+SPELLS_CONFIG="${SPELLS_CONFIG:?}"
+
+_info() {
+	cat <<EOF
+
+=== Puck Sigil Spell ===
+  Install and add to environment console Puck Sigil
+  a git tagger tool (https://github.com/oberon-systems/puck-sigil).
+
+  Add git-commit-hook for track changes in package metadata.
+=====================
+
+EOF
+}
+
+_install() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
+	_bin="$_path/$NAME"
+
+	[ -f "$_bin" ] && {
+		echo "$NAME: already installed"
+		exit 0
+	}
+
+	mkdir -p "$_path"
+	curl -LsSf "$URL" -o "$_bin"
+	chmod +x "$_bin"
+
+	read -p "Please enter a package metadata file: " -r VERSION_FILE
+	read -p "Please enter a version param (e.g. version): " -r VERSION_PARAM
+
+	cat <<EOF >"$SPELLS_CFG_DIR/psigil.json"
+{
+  "version_file": "$VERSION_FILE",
+  "version_param": "$VERSION_PARAM"
+}
+EOF
+
+	cat <<EOF >"$_path/post-commit-hook"
+if git diff --name-only HEAD^ HEAD | grep -q "^${VERSION_FILE}\$"; then
+    $_bin --config $SPELLS_CFG_DIR/psigil.json || exit 1
+fi
+exit 0
+EOF
+
+	chmod +x "$_path/post-commit-hook"
+	echo "$NAME: binary installed"
+}
+
+_enable() {
+	local _dir
+	local _bin
+	local _path
+
+	_dir="${SPELLS_BIN_DIR}"
+	_path="$_dir/$NAME"
+	_bin="$_path/$NAME"
+
+	cat <<EOF
+  echo ". $_path/post-commit-hook" >> .git/hooks/post-commit
+  chmod +x .git/hooks/post-commit
+  trap "sed -i '\\#\\. $_path/post-commit-hook#d' .git/hooks/post-commit" EXIT
+EOF
+
+}
+
+if [ -n "$1" ] && declare -f "$1" >/dev/null; then
+	"$1" "${2:-}"
+fi
