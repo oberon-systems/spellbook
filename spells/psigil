@@ -31,14 +31,13 @@ _install() {
 	_path="$_dir/$NAME"
 	_bin="$_path/$NAME"
 
-	[ -f "$_bin" ] && {
-		echo "$NAME: already installed"
-		exit 0
+	[ -f "$_bin" ] || {
+		mkdir -p "$_path"
+		curl -LsSf "$URL" -o "$_bin"
+		chmod +x "$_bin"
+	} && {
+		echo "Already installed, skipping"
 	}
-
-	mkdir -p "$_path"
-	curl -LsSf "$URL" -o "$_bin"
-	chmod +x "$_bin"
 
 	read -p "Please enter a package metadata file: " -r VERSION_FILE
 	read -p "Please enter a version param (e.g. version): " -r VERSION_PARAM
