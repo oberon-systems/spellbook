@@ -1,0 +1,12 @@
+url: https://github.com/example
+
+files:
+  - name: .pre-commit-hooks.yaml
+    version: v0.1.0
+    state: new
+
+spells:
+  - name: obsidian
+    url: ""
+    path: ""
+    state: new
